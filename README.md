@@ -1,91 +1,97 @@
 # INDI Drivers for AstroMeters.eu
 
-![AstroMeters Logo](https://astrometers.eu/images/logo.png)
+<p align="center">
+  <img width="200" height="200" alt="AstroMeters Logo" src="https://github.com/user-attachments/assets/2135c8e6-5789-47cd-ac9b-e2287eecc98f" />
+</p>
 
-This repository contains official INDI drivers for devices from **AstroMeters.eu**, a brand specializing in high-quality components for astronomical observations. Our goal is to enable you to fully harness the potential of your telescope and entire observation assembly.
+Official INDI drivers for **[AstroMeters.eu](https://astrometers.eu/)** devices – premium hardware for astronomy enthusiasts and professionals.
+Our drivers enable seamless integration and full control of your telescope accessories and environmental monitoring devices.
 
 ---
 
 ## 🔭 Supported Devices
 
-### 1. **AMFOC01 - Focuser**
-- **Description**: A professional, precise focuser with advanced features.
-- **Key Features**:
-  - Absolute positioning with a 1,000,000 step range
-  - Temperature compensation (software & hardware modes)
-  - Real-time position and temperature monitoring
-  - Position synchronization
+### AMFOC01 – Focuser
 
-### 2. **AMSKY01 - Weather Station**
-- **Description**: A multi-sensor device for monitoring observing conditions.
-- **Key Features**:
-  - Measures temperature, humidity, dew point, sky brightness (lux), and cloud coverage.
-  - Automatically adds weather data to FITS headers.
-  - Continuous data streaming via serial port.
+* **Description:** Precision focuser for telescopes, designed for demanding astronomical observations.
+* **Key features:**
 
-### 3. **AMTEST01 - Test Driver**
-- **Description**: A simple test driver for debugging serial communication.
-- **Key Features**:
-  - Connects to any serial device.
-  - Prints all received data to the console with timestamps.
-  - Includes a simulation mode for development.
+  * Absolute positioning with 1,000,000 step range
+  * Hardware & software temperature compensation
+  * Real-time monitoring (position, temperature)
+  * Easy position synchronization
+
+### AMSKY01 – Weather Station
+
+* **Description:** Multi-sensor weather station for monitoring observing conditions.
+* **Key features:**
+
+  * Measures temperature, humidity, dew point, sky brightness (lux), and cloud coverage
+  * Automatic weather data injection into FITS headers
+  * Continuous data streaming via serial interface
+
+### AMTEST01 – Test Driver
+
+* **Description:** Generic test driver for debugging and development.
+* **Key features:**
+
+  * Connects to any serial device
+  * Prints all incoming data with timestamps
+  * Simulation mode for offline development
 
 ---
 
 ## 📦 Installation
 
-### Prerequisites
-- A Linux-based operating system (e.g., Stellarmate, Astroberry)
-- INDI Library (`libindi-dev`)
-- CMake 3.13+
+### Requirements
 
-### Build Instructions
+* Linux-based system (Stellarmate, Astroberry, Ubuntu, RPi OS, etc.)
+* [INDI Library](https://indilib.org/) (`libindi-dev`)
+* CMake ≥ 3.13
 
-To build and install the drivers, run the following commands in your terminal:
+### Build & Install
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-repo/indi-astrometers.git
+git clone https://github.com/AstroMeters/indi-astrometers.git
 cd indi-astrometers
-
-# Create a build directory
-mkdir build
-cd build
-
-# Configure and compile
+mkdir build && cd build
 cmake ..
-make -j4
-
-# Install the drivers
+make -j$(nproc)
 sudo make install
 ```
 
-### Installation Paths
-- **Binaries**: `/usr/bin/`
-- **XML Definitions**: `/usr/share/indi/`
+**Installed files:**
+
+* Binaries: `/usr/bin/`
+* XML driver definitions: `/usr/share/indi/`
+
+
+## 🚀 Getting Started
+
+1. Start your **INDI server** (e.g., with KStars/Ekos, CCDCiel, N.I.N.A.).
+2. Connect your AstroMeters device(s) to your computer.
+3. In your INDI client, locate AstroMeters drivers under the appropriate category (Focuser, Weather).
+4. Connect and enjoy precise, reliable control over your observatory!
+
+
+## 🙌 Contributing
+
+We welcome community involvement! If you want to report a bug, request a feature, or submit code:
+
+1. [Open an Issue](https://github.com/your-repo/indi-astrometers/issues) for bugs or feature suggestions.
+2. Fork this repository.
+3. Create a new branch (`feature/my-feature`).
+4. Submit a Pull Request with a clear description.
+
+Please follow the [INDI coding style](https://github.com/indilib/indi/blob/master/CONTRIBUTING.md) and include test cases where possible.
+
+
+## 📧 Support
+
+For questions, troubleshooting, or commercial support, visit [astrometers.eu](https://astrometers.eu) or email us at [info@astrometers.eu](mailto:info@astrometers.eu).
 
 ---
 
-## 🚀 Usage
+## 📄 License
 
-After installation, the drivers will be available in any INDI-compatible client (e.g., KStars/Ekos, N.I.N.A., CCDCiel).
-
-1.  **Start your INDI server.**
-2.  **Connect your client** (e.g., Ekos).
-3.  **Find the AstroMeters devices** in the appropriate categories (Focuser, Weather).
-4.  **Connect** and enjoy precise control over your astronomical setup!
-
----
-
-## 🤝 Support & Contribution
-
-As a brand that brings you components we use ourselves, we welcome your feedback and contributions.
-
-- **Expert Support**: For questions and support, please visit our website.
-- **Contribute**: Feel free to fork the repository, create a feature branch, and submit a pull request.
-
-**AstroMeters.eu** - Your partner on an incredible journey of exploring the infinite.
-
-- **Website**: [https://astrometers.eu](https://astrometers.eu)
-- **Contact**: info@astrometers.eu
-
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
