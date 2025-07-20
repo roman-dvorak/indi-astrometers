@@ -1,0 +1,88 @@
+# Build directories
+build/
+cmake-build-*/
+*/build/
+**/build/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+!*.xml.cmake
+
+# Compiled binaries
+indi_*
+!*.xml
+
+# Object files
+*.o
+*.obj
+*.so
+*.a
+*.dylib
+*.dll
+
+# Generated XML files (keep source .xml.cmake)
+indi_*.xml
+!*.xml.cmake
+
+# Backup files
+*.backup
+*~
+*.orig
+*.swp
+*.swo
+.#*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.code-workspace
+.clangd/
+compile_commands.json
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Package files
+*.deb
+*.rpm
+*.tar.gz
+*.zip
+_CPack_Packages/
+packages/
+
+# Log files
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Install directories
+/usr/local/
+install/
+staging/
+
+# Debug files
+*.dSYM/
+*.pdb
+
+# Documentation generated files
+docs/html/
+docs/latex/
+
+# Test results
+Testing/
+CTestTestfile.cmake

@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 3.13)
+project(indi-astrometers)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Project version
+set(CMAKE_INDI_ASTROMETERS_VERSION_MAJOR 1)
+set(CMAKE_INDI_ASTROMETERS_VERSION_MINOR 0)
+set(CMAKE_INDI_ASTROMETERS_VERSION_RELEASE 0)
+
+# Build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
+# Find INDI
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(INDI REQUIRED libindi)
+
+# Set INDI data directory if not set
+if (NOT DEFINED INDI_DATA_DIR)
+    set(INDI_DATA_DIR "${CMAKE_INSTALL_PREFIX}/share/indi")
+endif()
+
+# Add drivers subdirectory
+add_subdirectory(drivers)
+
+# Package configuration
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "INDI Astrometers drivers")
+set(CPACK_PACKAGE_VENDOR "Astrometers")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_INDI_ASTROMETERS_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_INDI_ASTROMETERS_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_INDI_ASTROMETERS_VERSION_RELEASE})
+
+include(CPack)
