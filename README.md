@@ -1,137 +1,91 @@
-# INDI Astrometers Drivers
+# INDI Drivers for AstroMeters.eu
 
-This repository contains INDI drivers for Astrometers devices.
+![AstroMeters Logo](https://astrometers.eu/images/logo.png)
 
-## Author
-**Roman Dvořák** - info@astrometers.cz  
-Copyright (C) 2025 Astrometers
+This repository contains official INDI drivers for devices from **AstroMeters.eu**, a brand specializing in high-quality components for astronomical observations. Our goal is to enable you to fully harness the potential of your telescope and entire observation assembly.
 
-## Supported Devices
+---
 
-### AMFOC01 - Focuser Driver
+## 🔭 Supported Devices
 
-Professional focuser with advanced features:
+### 1. **AMFOC01 - Focuser**
+- **Description**: A professional, precise focuser with advanced features.
+- **Key Features**:
+  - Absolute positioning with a 1,000,000 step range
+  - Temperature compensation (software & hardware modes)
+  - Real-time position and temperature monitoring
+  - Position synchronization
 
-#### Features:
-- **Position Control:** Absolute positioning with 1,000,000 step range
-- **Sync Functionality:** Position synchronization support
-- **Temperature Monitoring:** Real-time temperature reading
-- **Temperature Compensation:** 
-  - Driver mode (software compensation)
-  - Focuser mode (hardware compensation)
-- **Real-time Polling:** Automatic status updates
-- **Protocol Support:** Complete AMFOC01 serial protocol implementation
+### 2. **AMSKY01 - Weather Station**
+- **Description**: A multi-sensor device for monitoring observing conditions.
+- **Key Features**:
+  - Measures temperature, humidity, dew point, sky brightness (lux), and cloud coverage.
+  - Automatically adds weather data to FITS headers.
+  - Continuous data streaming via serial port.
 
-#### Technical Specifications:
-- **Communication:** Serial 9600 baud, 10ms timeout
-- **Position Range:** 0 - 1,000,000 steps
-- **Temperature Range:** -50°C to +70°C
-- **Compensation Range:** -999.9 to +999.9 steps/°C
+### 3. **AMTEST01 - Test Driver**
+- **Description**: A simple test driver for debugging serial communication.
+- **Key Features**:
+  - Connects to any serial device.
+  - Prints all received data to the console with timestamps.
+  - Includes a simulation mode for development.
 
-## Building
+---
+
+## 📦 Installation
 
 ### Prerequisites
+- A Linux-based operating system (e.g., Stellarmate, Astroberry)
+- INDI Library (`libindi-dev`)
 - CMake 3.13+
-- INDI development libraries
-- C++14 compatible compiler
 
 ### Build Instructions
+
+To build and install the drivers, run the following commands in your terminal:
+
 ```bash
+# Clone the repository
+git clone https://github.com/your-repo/indi-astrometers.git
+cd indi-astrometers
+
+# Create a build directory
 mkdir build
 cd build
+
+# Configure and compile
 cmake ..
-make
+make -j4
+
+# Install the drivers
 sudo make install
 ```
 
-### Installation Locations
-- **Binary:** `/usr/local/bin/indi_amfoc01`
-- **XML Definition:** `/usr/local/share/indi/indi_amfoc01.xml`
-
-## Usage
-
-### Starting the Driver
-```bash
-# Start driver directly
-indi_amfoc01
-
-# Start with verbose output
-indi_amfoc01 -v
-```
-
-### INDI Client Connection
-The driver appears as "AMFOC01" in INDI clients like KStars/Ekos.
-
-### Configuration Tabs
-
-#### Main Control
-- **Absolute Position:** Slider control (0-1,000,000)
-- **Relative Position:** Step-based movement
-- **Sync Position:** Position synchronization
-- **Temperature:** Real-time display
-
-#### Options
-- **Temperature Compensation Mode:** Off/Driver/Focuser
-- **Temperature Coefficient:** Compensation rate (steps/°C)
-- **Compensation Settings:** Update period and threshold
-
-## Protocol Documentation
-
-The driver implements the complete AMFOC01 serial protocol:
-
-### GET Commands (Reading)
-- `:GP#` - Get actual position
-- `:GN#` - Get target position  
-- `:GT#` - Get temperature
-- `:GI#` - Check if motor is moving
-- `:GD#` - Get device type
-- `:GV#` - Get firmware version
-- `:GH#` - Get maximum position
-- `:GC#` - Get command status
-
-### SET Commands (Configuration)
-- `:SN<pos>#` - Set future position
-- `:SP<pos>#` - Set current position (sync)
-- `:SD<type>#` - Set device type
-- `:SC<val>#` - Set calibration value
-- `:PO<val>#` - Set output port
-
-### Motion Commands
-- `:FG#` - Start movement to future position
-- `:FQ#` - Stop movement
-- `:C##` - Trigger temperature measurement
-
-## Development
-
-### Project Structure
-```
-indi-astrometers/
-├── CMakeLists.txt
-├── drivers/
-│   └── focuser/
-│       └── AMFOC01/
-│           ├── amfoc01.h
-│           ├── amfoc01.cpp
-│           ├── CMakeLists.txt
-│           └── indi_amfoc01.xml.cmake
-└── README.md
-```
-
-### Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Make changes with proper testing
-4. Submit pull request
-
-## License
-
-This project is licensed under the terms specified in the LICENSE file.
-
-## Support
-
-For support and questions, contact:
-- **Email:** info@astrometers.cz
-- **Website:** https://www.astrometers.cz
+### Installation Paths
+- **Binaries**: `/usr/bin/`
+- **XML Definitions**: `/usr/share/indi/`
 
 ---
-**INDI Astrometers Drivers v1.0**
+
+## 🚀 Usage
+
+After installation, the drivers will be available in any INDI-compatible client (e.g., KStars/Ekos, N.I.N.A., CCDCiel).
+
+1.  **Start your INDI server.**
+2.  **Connect your client** (e.g., Ekos).
+3.  **Find the AstroMeters devices** in the appropriate categories (Focuser, Weather).
+4.  **Connect** and enjoy precise control over your astronomical setup!
+
+---
+
+## 🤝 Support & Contribution
+
+As a brand that brings you components we use ourselves, we welcome your feedback and contributions.
+
+- **Expert Support**: For questions and support, please visit our website.
+- **Contribute**: Feel free to fork the repository, create a feature branch, and submit a pull request.
+
+**AstroMeters.eu** - Your partner on an incredible journey of exploring the infinite.
+
+- **Website**: [https://astrometers.eu](https://astrometers.eu)
+- **Contact**: info@astrometers.eu
+
