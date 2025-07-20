@@ -27,4 +27,4 @@ target_link_libraries(indi_amfoc01
 install(TARGETS indi_amfoc01 RUNTIME DESTINATION bin)
 
 # Install XML file
-install(FILES indi_amfoc01.xml DESTINATION ${INDI_DATA_DIR})
+install(FILES indi_amfoc01.xml DESTINATION /usr/share/indi)

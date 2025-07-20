@@ -3,6 +3,8 @@
 # Add focuser drivers
 add_subdirectory(focuser)
 
-# Future: Add other driver categories
-# add_subdirectory(auxiliary)
-# add_subdirectory(telescope)
+# Add weather drivers
+add_subdirectory(weather)
+
+# Test drivers
+add_subdirectory(test)

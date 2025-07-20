@@ -1,6 +1,15 @@
 /*
-    AMSKY01 INDI Weather Station Driver
-    Simple serial port data reader and console output
+    AMSKY01 INDI Driver for AstroMeters Sky Sensor
+
+    This is an INDI (Instrument Neutral Distributed Interface) driver for the AMSKY01 sky sensor,
+    designed to provide real-time weather and sky condition data for astronomical observatories.
+
+    The AMSKY01 sensor measures temperature, humidity, dew point, ambient light, sky brightness,
+    and cloud cover using multiple thermopile segments. Data is received via serial connection
+    in CSV format with $light, $cloud, and $hygro messages.
+
+    Author: Roman Dvorak <info@astrometers.cz>
+    Copyright (C) 2025 Astrometers
 */
 
 #include "amsky01.h"
@@ -23,7 +32,6 @@ AMSKY01::AMSKY01()
 
 AMSKY01::~AMSKY01()
 {
-    delete serialConnection;
 }
 
 const char *AMSKY01::getDefaultName()
@@ -33,7 +41,26 @@ const char *AMSKY01::getDefaultName()
 
 bool AMSKY01::initProperties()
 {
-    INDI::DefaultDevice::initProperties();
+    INDI::Weather::initProperties();
+
+    // Add weather parameters podle AMSKY01 senzorů
+    addParameter("WEATHER_TEMPERATURE", "Temperature (°C)", -50, 80, 15);
+    addParameter("WEATHER_HUMIDITY", "Humidity (%)", 0, 100, 15);  
+    addParameter("WEATHER_DEW_POINT", "Dew Point (°C)", -50, 50, 15);
+    addParameter("WEATHER_LIGHT_LUX", "Light (lux)", 0, 100000, 15);
+    addParameter("WEATHER_SKY_BRIGHTNESS", "Sky Brightness (mag/arcsec²)", 10, 25, 15);
+    addParameter("WEATHER_CLOUD_COVER", "Cloud Cover (%)", 0, 100, 15);
+    addParameter("WEATHER_SKY_TEMPERATURE", "Sky Temperature Avg (°C)", -80, 50, 15);
+    
+    // Individuální teploty ze sky senzoru (5 thermopile segmentů)
+    addParameter("WEATHER_SKY_TEMP_1", "Sky Temp 1 (°C)", -80, 50, 15);
+    addParameter("WEATHER_SKY_TEMP_2", "Sky Temp 2 (°C)", -80, 50, 15);
+    addParameter("WEATHER_SKY_TEMP_3", "Sky Temp 3 (°C)", -80, 50, 15);
+    addParameter("WEATHER_SKY_TEMP_4", "Sky Temp 4 (°C)", -80, 50, 15);
+    addParameter("WEATHER_SKY_TEMP_5", "Sky Temp 5 - Zenith (°C)", -80, 50, 15);
+    
+    setCriticalParameter("WEATHER_TEMPERATURE");
+    setCriticalParameter("WEATHER_HUMIDITY");
 
     // Device info
     addDebugControl();
@@ -43,21 +70,8 @@ bool AMSKY01::initProperties()
     // Status display
     IUFillText(&StatusT[0], "DEVICE", "Device", "AMSKY01");
     IUFillText(&StatusT[1], "STATUS", "Status", "Disconnected");
-    IUFillText(&StatusT[2], "LAST_DATA", "Last Data", "None");
-    IUFillTextVector(&StatusTP, StatusT, 3, getDeviceName(), "DEVICE_STATUS", "Device Status", MAIN_CONTROL_TAB, IP_RO, 60, IPS_IDLE);
+    IUFillTextVector(&StatusTP, StatusT, 2, getDeviceName(), "DEVICE_STATUS", "Device Status", MAIN_CONTROL_TAB, IP_RO, 60, IPS_IDLE);
 
-    // Read data control
-    IUFillSwitch(&ReadDataS[0], "START", "Start Reading", ISS_OFF);
-    IUFillSwitch(&ReadDataS[1], "STOP", "Stop Reading", ISS_OFF);
-    IUFillSwitchVector(&ReadDataSP, ReadDataS, 2, getDeviceName(), "READ_DATA", "Data Reading", MAIN_CONTROL_TAB, IP_RW, ISR_1OFMANY, 60, IPS_IDLE);
-
-    // Serial connection
-    serialConnection = new Connection::Serial(this);
-    serialConnection->registerHandshake([&]() { return Handshake(); });
-    serialConnection->setDefaultBaudRate(Connection::Serial::B_9600);
-    serialConnection->setDefaultPort("/dev/ttyACM0");
-    registerConnection(serialConnection);
-    
     // Add standard controls
     addAuxControls();
 
@@ -66,25 +80,17 @@ bool AMSKY01::initProperties()
 
 bool AMSKY01::updateProperties()
 {
-    INDI::DefaultDevice::updateProperties();
+    INDI::Weather::updateProperties();
 
     if (isConnected())
     {
         // Add properties when connected
         defineProperty(&StatusTP);
-        defineProperty(&ReadDataSP);
         
         // Update status and start automatic data reading
         IUSaveText(&StatusT[1], "Connected - Auto Reading");
         StatusTP.s = IPS_OK;
         IDSetText(&StatusTP, nullptr);
-        
-        // Automatically start reading data
-        isReading = true;
-        ReadDataS[0].s = ISS_ON;  // Set START switch to ON
-        ReadDataS[1].s = ISS_OFF; // Set STOP switch to OFF
-        ReadDataSP.s = IPS_BUSY;
-        IDSetSwitch(&ReadDataSP, nullptr);
         
         printf("[AMSKY01] Device connected - starting automatic data reading\n");
         std::cout.flush();
@@ -96,15 +102,6 @@ bool AMSKY01::updateProperties()
     {
         // Remove properties when disconnected
         deleteProperty(StatusTP.name);
-        deleteProperty(ReadDataSP.name);
-        
-        // Stop reading if active
-        if (isReading)
-        {
-            isReading = false;
-            printf("[AMSKY01] Stopped reading data\n");
-            std::cout.flush();
-        }
         
         printf("[AMSKY01] Device disconnected\n");
         std::cout.flush();
@@ -123,18 +120,10 @@ bool AMSKY01::Handshake()
         return true;
     }
 
-    PortFD = serialConnection->getPortFD();
-    LOGF_DEBUG("Handshake: Serial port FD = %d", PortFD);
-    
-    if (PortFD < 0)
-    {
-        LOG_ERROR("Serial port not connected");
-        printf("[AMSKY01] ERROR: Serial port not connected\n");
-        std::cout.flush();
-        return false;
-    }
-
-    printf("[AMSKY01] Connected to serial port (FD: %d)\n", PortFD);
+    // Weather base class handles connection management
+    // Just confirm connection is ready
+    LOGF_INFO("Connected successfully to %s.", getDeviceName());
+    printf("[AMSKY01] Connected to serial device\n");
     std::cout.flush();
     
     return true;
@@ -185,44 +174,12 @@ bool AMSKY01::sendCommand(const char *cmd)
 
 bool AMSKY01::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
-    if (dev != nullptr && strcmp(dev, getDeviceName()) == 0)
-    {
-        // Read data control
-        if (strcmp(name, "READ_DATA") == 0)
-        {
-            IUUpdateSwitch(&ReadDataSP, states, names, n);
-            
-            if (ReadDataS[0].s == ISS_ON) // Start reading
-            {
-                isReading = true;
-                IUSaveText(&StatusT[1], "Reading Data");
-                ReadDataSP.s = IPS_BUSY;
-                printf("[AMSKY01] Started continuous data reading\n");
-                std::cout.flush();
-                SetTimer(100); // Read every 100ms
-            }
-            else // Stop reading
-            {
-                isReading = false;
-                IUSaveText(&StatusT[1], "Connected");
-                ReadDataSP.s = IPS_OK;
-                printf("[AMSKY01] Stopped data reading\n");
-                std::cout.flush();
-            }
-            
-            IDSetSwitch(&ReadDataSP, nullptr);
-            StatusTP.s = IPS_OK;
-            IDSetText(&StatusTP, nullptr);
-            return true;
-        }
-    }
-
-    return INDI::DefaultDevice::ISNewSwitch(dev, name, states, names, n);
+    return INDI::Weather::ISNewSwitch(dev, name, states, names, n);
 }
 
 void AMSKY01::TimerHit()
 {
-    if (isConnected() && isReading)
+    if (isConnected())
     {
         readSerialData();
         SetTimer(100); // Continue reading every 100ms
@@ -231,6 +188,7 @@ void AMSKY01::TimerHit()
 
 bool AMSKY01::readSerialData()
 {
+    // Use PortFD from base Weather class
     if (PortFD < 0)
     {
         return false;
@@ -241,10 +199,32 @@ bool AMSKY01::readSerialData()
     
     if (isSimulation())
     {
-        // Generate some test data
+        // Generate realistic AMSKY01 test data
         static int counter = 0;
-        snprintf(buffer, sizeof(buffer), "TEST_DATA_%d,temperature=%.1f,humidity=%.1f", 
-                counter++, 20.0 + (counter % 10), 50.0 + (counter % 20));
+        counter++;
+        
+        switch (counter % 3)
+        {
+            case 0:
+                // Hygro: temperature, humidity
+                snprintf(buffer, sizeof(buffer), "$hygro,%.2f,%.2f", 
+                        25.0 + (counter % 20), 45.0 + (counter % 30));
+                break;
+            case 1:
+                // Light: lux, raw1, raw2, gain, integration_time
+                snprintf(buffer, sizeof(buffer), "$light,%.2f,%d,%d,%d,%d", 
+                        1500.0 + (counter % 1000), 4500 + (counter % 500), 
+                        2100 + (counter % 200), 1, 300);
+                break;
+            case 2:
+                // Cloud: 5 sky temperatures (ADC values)
+                snprintf(buffer, sizeof(buffer), "$cloud,%.2f,%.2f,%.2f,%.2f,%.2f",
+                        65100.0 + (counter % 50), 65140.0 + (counter % 40), 
+                        65050.0 + (counter % 30), 65070.0 + (counter % 45),
+                        65100.0 + (counter % 35));
+                break;
+        }
+        
         nbytes_read = strlen(buffer);
         processData(std::string(buffer));
         return true;
@@ -283,6 +263,10 @@ void AMSKY01::processData(const std::string& data)
     if (data.empty())
         return;
         
+    // Ignoruj řádky nezačínající $
+    if (data[0] != '$')
+        return;
+        
     // Print to console with timestamp
     time_t rawtime;
     struct tm * timeinfo;
@@ -296,10 +280,200 @@ void AMSKY01::processData(const std::string& data)
     printf("[AMSKY01] [%s] DATA: %s\n", timestamp, data.c_str());
     std::cout.flush();
     
-    // Update INDI property
-    IUSaveText(&StatusT[2], data.c_str());
-    StatusTP.s = IPS_OK;
-    IDSetText(&StatusTP, nullptr);
+    // Parse weather data
+    if (parseHygro(data) || parseLight(data) || parseCloud(data))
+    {
+        weatherData.dataValid = (weatherData.hygroValid || weatherData.lightValid || weatherData.cloudValid);
+        
+        // Update weather parameters
+        if (weatherData.hygroValid)
+        {
+            setParameterValue("WEATHER_TEMPERATURE", weatherData.temperature);
+            setParameterValue("WEATHER_HUMIDITY", weatherData.humidity);
+            setParameterValue("WEATHER_DEW_POINT", weatherData.dewPoint);
+        }
+        
+        if (weatherData.lightValid)
+        {
+            setParameterValue("WEATHER_LIGHT_LUX", weatherData.lux);
+            setParameterValue("WEATHER_SKY_BRIGHTNESS", weatherData.skyBrightness);
+        }
+        
+        if (weatherData.cloudValid)
+        {
+            setParameterValue("WEATHER_SKY_TEMPERATURE", weatherData.avgCloudTemp);
+            setParameterValue("WEATHER_CLOUD_COVER", weatherData.cloudCover);
+            
+            // Aktualizuj všechny individuální sky teploty
+            setParameterValue("WEATHER_SKY_TEMP_1", weatherData.cloudTemp[0]);
+            setParameterValue("WEATHER_SKY_TEMP_2", weatherData.cloudTemp[1]);
+            setParameterValue("WEATHER_SKY_TEMP_3", weatherData.cloudTemp[2]);
+            setParameterValue("WEATHER_SKY_TEMP_4", weatherData.cloudTemp[3]);
+            setParameterValue("WEATHER_SKY_TEMP_5", weatherData.cloudTemp[4]);
+        }
+    }
     
     LOGF_INFO("Received data: %s", data.c_str());
+}
+
+// Weather-specific functions
+IPState AMSKY01::updateWeather()
+{
+    if (weatherData.dataValid)
+        return IPS_OK;
+    else
+        return IPS_BUSY;
+}
+
+bool AMSKY01::parseHygro(const std::string& data)
+{
+    // Parse: $hygro,temperature,humidity
+    if (data.find("$hygro,") == 0)
+    {
+        std::vector<std::string> tokens;
+        std::stringstream ss(data);
+        std::string token;
+        
+        while (std::getline(ss, token, ','))
+        {
+            tokens.push_back(token);
+        }
+        
+        if (tokens.size() >= 3)
+        {
+            try
+            {
+                weatherData.temperature = std::stod(tokens[1]);
+                weatherData.humidity = std::stod(tokens[2]);
+                
+                // Calculate dew point using Magnus formula
+                double a = 17.27;
+                double b = 237.7;
+                double alpha = ((a * weatherData.temperature) / (b + weatherData.temperature)) + log(weatherData.humidity / 100.0);
+                weatherData.dewPoint = (b * alpha) / (a - alpha);
+                
+                weatherData.hygroValid = true;
+                
+                printf("[AMSKY01]   🌡️  Temperature: %.1f°C, Humidity: %.1f%%, Dew Point: %.1f°C\n", 
+                       weatherData.temperature, weatherData.humidity, weatherData.dewPoint);
+                std::cout.flush();
+                return true;
+            }
+            catch (const std::exception& e)
+            {
+                LOGF_ERROR("Error parsing hygro data: %s", e.what());
+            }
+        }
+    }
+    return false;
+}
+
+bool AMSKY01::parseLight(const std::string& data)
+{
+    // Parse: $light,lux,raw1,raw2,gain,integration_time_ms
+    if (data.find("$light,") == 0)
+    {
+        std::vector<std::string> tokens;
+        std::stringstream ss(data);
+        std::string token;
+        
+        while (std::getline(ss, token, ','))
+        {
+            tokens.push_back(token);
+        }
+        
+        if (tokens.size() >= 6)
+        {
+            try
+            {
+                weatherData.lux = std::stod(tokens[1]);
+                weatherData.raw1 = std::stoi(tokens[2]);
+                weatherData.raw2 = std::stoi(tokens[3]);
+                weatherData.gain = std::stoi(tokens[4]);
+                weatherData.integrationTime = std::stoi(tokens[5]);
+                
+                // Convert lux to sky brightness (lepší aproximace)
+                // Velmi tmavá obloha: ~22 mag/arcsec² při <0.01 lux
+                // Jasná obloha při úplňku: ~19 mag/arcsec² při ~0.1 lux  
+                // Městské světlo: ~16-18 mag/arcsec² při >10 lux
+
+                weatherData.lux = (static_cast<float>(weatherData.raw1) / static_cast<float>(weatherData.gain)) / static_cast<float>(weatherData.integrationTime);
+                weatherData.lux *= 1000000.0;
+
+                if (weatherData.lux < 0.001)
+                    weatherData.skyBrightness = 22.0;
+                else
+                    weatherData.skyBrightness = 22.0 - 2.5 * log10(weatherData.lux * 100);
+                
+                // Omez na rozumné hodnoty
+                if (weatherData.skyBrightness < 15.0) weatherData.skyBrightness = 15.0;
+                if (weatherData.skyBrightness > 22.5) weatherData.skyBrightness = 22.5;
+                
+                weatherData.lightValid = true;
+                
+                printf("[AMSKY01]   ☀️  Light: %.1f lux (raw1:%d, raw2:%d, gain:%d, int:%dms), Sky: %.1f mag/arcsec²\n", 
+                       weatherData.lux, weatherData.raw1, weatherData.raw2, weatherData.gain, 
+                       weatherData.integrationTime, weatherData.skyBrightness);
+                std::cout.flush();
+                return true;
+            }
+            catch (const std::exception& e)
+            {
+                LOGF_ERROR("Error parsing light data: %s", e.what());
+            }
+        }
+    }
+    return false;
+}
+
+bool AMSKY01::parseCloud(const std::string& data)
+{
+    // Parse: $cloud,temp1,temp2,temp3,temp4,temp5 (4 segmenty + zenit)
+    if (data.find("$cloud,") == 0)
+    {
+        std::vector<std::string> tokens;
+        std::stringstream ss(data);
+        std::string token;
+        
+        while (std::getline(ss, token, ','))
+        {
+            tokens.push_back(token);
+        }
+        
+        if (tokens.size() >= 6)
+        {
+            try
+            {
+                // Načti 5 teplot oblohy
+                double tempSum = 0.0;
+                for (int i = 0; i < 5; i++)
+                {
+                    weatherData.cloudTemp[i] = std::stod(tokens[i + 1]);
+                    tempSum += weatherData.cloudTemp[i];
+                }
+                
+                weatherData.avgCloudTemp = tempSum / 5.0;
+                
+                double minSkyTemp = 64000.0;  // jasná studená obloha
+                double maxSkyTemp = 66000.0;  // velmi oblačno
+                
+                weatherData.cloudCover = ((weatherData.avgCloudTemp - minSkyTemp) / (maxSkyTemp - minSkyTemp)) * 100.0;
+                if (weatherData.cloudCover < 0.0) weatherData.cloudCover = 0.0;
+                if (weatherData.cloudCover > 100.0) weatherData.cloudCover = 100.0;
+                
+                weatherData.cloudValid = true;
+                
+                printf("[AMSKY01]   ☁️  Sky Temps: %.1f, %.1f, %.1f, %.1f, %.1f (avg: %.1f), Cloud Cover: %.1f%%\n",
+                       weatherData.cloudTemp[0], weatherData.cloudTemp[1], weatherData.cloudTemp[2], 
+                       weatherData.cloudTemp[3], weatherData.cloudTemp[4], weatherData.avgCloudTemp, weatherData.cloudCover);
+                std::cout.flush();
+                return true;
+            }
+            catch (const std::exception& e)
+            {
+                LOGF_ERROR("Error parsing cloud data: %s", e.what());
+            }
+        }
+    }
+    return false;
 }
